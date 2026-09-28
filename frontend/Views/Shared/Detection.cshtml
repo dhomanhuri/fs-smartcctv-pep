@@ -1,0 +1,85 @@
+@model MvcSmartCctv.Models.DetectionViewModel
+@{
+    var statusBadge = new System.Collections.Generic.Dictionary<string, string> { { "baru", "warning" }, { "diproses", "warning" }, { "selesai", "success" } };
+    var statusLabel = new System.Collections.Generic.Dictionary<string, string> { { "baru", "Baru" }, { "diproses", "Diproses" }, { "selesai", "Selesai" } };
+}
+<div class="page-head">
+  <h2>@Model.PageTitle</h2>
+  <p>@Model.PageDescription</p>
+</div>
+
+<div class="kpi-grid" style="grid-template-columns:repeat(3,1fr);">
+  <div class="kpi-tile"><div class="label">Kamera Terpantau</div><div class="value">@Model.StatCams</div></div>
+  <div class="kpi-tile"><div class="label">Pelanggaran (24 Jam)</div><div class="value">@Model.StatToday</div></div>
+  <div class="kpi-tile"><div class="label">Kasus Terbuka</div><div class="value" style="color:@Model.AccentColor;">@Model.StatOpen</div></div>
+</div>
+
+<div class="camera-grid">
+  @if (!Model.Cameras.Any())
+  {
+    <div style="color:var(--text-muted);font-size:0.85rem;">Belum ada kamera.</div>
+  }
+  else
+  {
+  foreach (var c in Model.Cameras)
+  {
+    <div class="camera-card" id="cam-@c.Id">
+      <div class="camera-feed" style="position:relative;overflow:hidden;background:#000;">
+      @if (!string.IsNullOrEmpty(c.StreamPath))
+      {
+        <span class="live-badge on" style="z-index:10;">LIVE</span>
+        <iframe src="http://localhost:8889/@c.StreamPath" style="width:100%;height:100%;border:none;position:absolute;top:0;left:0;" allow="fullscreen"></iframe>
+      }
+      else
+      {
+        <span class="live-badge">NO SIGNAL</span>
+        <div class="placeholder"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8l4-3h6l2 3h4a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.2"/></svg><span>Belum ada stream</span></div>
+      }
+      </div>
+      <div class="camera-meta"><div class="name">@c.Name</div><div class="loc">@c.Location</div></div>
+    </div>
+  }
+  }
+</div>
+
+<section class="panel">
+  <div class="panel-head"><h2>Riwayat Pelanggaran @(Model.Category == "vehicle" ? "Vehicle" : "APD")</h2></div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Waktu</th><th>Kamera</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+      @if (!Model.Violations.Any())
+      {
+        <tr><td colspan="4" style="text-align:center;color:var(--text-muted);">Belum ada data</td></tr>
+      }
+      else
+      {
+      foreach (var v in Model.Violations)
+      {
+        <tr class="row-click" style="cursor:pointer;" onclick="document.getElementById('case-modal-@v.Id').style.display='flex';">
+          <td class="mono">@v.CreatedAt.ToString("dd MMM, HH:mm")</td>
+          <td>@v.CameraName</td>
+          <td>
+          @if (v.IsCase)
+          {
+            <span class="badge @statusBadge[v.Status]">Kasus &middot; @statusLabel[v.Status]</span>
+          }
+          else
+          {
+            <span class="badge muted">Alert</span>
+          }
+          </td>
+          <td><button class="link-btn" onclick="event.stopPropagation();document.getElementById('case-modal-@v.Id').style.display='flex';">Lihat Detail</button>
+          </td>
+        </tr>
+      }
+      }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+@foreach (var v in Model.Violations)
+{
+  @Html.Partial("~/Views/Shared/_CaseModal.cshtml", v)
+}

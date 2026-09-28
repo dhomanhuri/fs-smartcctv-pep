@@ -1,0 +1,72 @@
+################################################################
+# Konfigurasi AI Engine — Smart CCTV AI
+#
+# File ini dibaca oleh stream_worker.py dan detector.py.
+# Sesuaikan setelah model .pt ditempatkan di folder weights/
+################################################################
+
+inference:
+  # Interval frame inferensi — 1 dari setiap N frame yang dianalisis
+  # Naikkan nilai ini (mis. 10) untuk menghemat CPU jika server terbatas
+  frame_skip: 5
+
+  # Confidence threshold minimum untuk dianggap sebagai pelanggaran (0.0 - 1.0)
+  confidence_threshold: 0.60
+
+  # Cooldown per kamera (detik) — setelah mengirim satu alert,
+  # kamera tidak akan mengirim alert lagi dalam N detik berikutnya
+  # Mencegah alert spam dari deteksi berulang orang yang sama
+  cooldown_seconds: 30
+
+  # Ukuran input gambar ke model (pixels). Umumnya 640 untuk YOLOv8.
+  imgsz: 640
+
+cameras:
+  # Konfigurasi kamera APD
+  - camera_id: 1
+    model: apd            # menggunakan weights/apd.pt
+    rtsp_url: "rtsp://admin:password@192.168.56.101:554/stream1"
+    enabled: true
+
+  - camera_id: 2
+    model: apd
+    rtsp_url: "rtsp://admin:password@192.168.56.102:554/stream1"
+    enabled: true
+
+  - camera_id: 3
+    model: apd
+    rtsp_url: null        # Kamera belum memiliki stream RTSP
+    enabled: false
+
+  # Konfigurasi kamera Vehicle
+  - camera_id: 4
+    model: vehicle        # menggunakan weights/vehicle.pt
+    rtsp_url: "rtsp://admin:password@192.168.56.104:554/stream1"
+    enabled: true
+
+  - camera_id: 5
+    model: vehicle
+    rtsp_url: "rtsp://admin:password@192.168.56.105:554/stream1"
+    enabled: true
+
+labels:
+  # Label kelas APD yang dianggap pelanggaran (class tidak memakai APD)
+  apd:
+    - name: "Tidak memakai helm"
+      class_id: 0
+      severity: critical
+    - name: "Tidak memakai rompi"
+      class_id: 1
+      severity: warning
+    - name: "Tidak memakai masker"
+      class_id: 2
+      severity: warning
+
+  # Label kelas Vehicle yang dianggap pelanggaran
+  vehicle:
+    - name: "Penumpang di bak kendaraan"
+      class_id: 0
+      severity: critical
+    - name: "Kendaraan melebihi kapasitas"
+      class_id: 1
+      severity: warning
